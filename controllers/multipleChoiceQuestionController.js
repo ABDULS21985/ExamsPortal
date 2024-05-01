@@ -1,8 +1,18 @@
 // controllers/multipleChoiceQuestionController.js
 const { pool } = require('../db');
 
+//createMultipleChoiceQuestion
+
 async function createMultipleChoiceQuestion(req, res) {
   const { content, options, correctAnswers } = req.body;
+
+  // Basic validation
+  if (!content || !Array.isArray(options) || !Array.isArray(correctAnswers)) {
+    return res.status(400).json({ error: 'Invalid data format' });
+  }
+
+  console.log('Received options:', options);
+  console.log('Received correct answers:', correctAnswers);
 
   try {
     const client = await pool.connect();
@@ -14,7 +24,8 @@ async function createMultipleChoiceQuestion(req, res) {
     const questionId = questionInsertResult.rows[0].id;
 
     // Insert options and correct answers into the multiple_choice_questions table
-    await client.query('INSERT INTO multiple_choice_questions (question_id, options, correct_answers) VALUES ($1, $2, $3)', [questionId, options, correctAnswers]);
+    await client.query('INSERT INTO multiple_choice_questions (question_id, options, correct_answers) VALUES ($1, $2, $3)', [questionId, JSON.stringify(options), correctAnswers]);
+
 
     await client.query('COMMIT');
     client.release();
@@ -26,7 +37,7 @@ async function createMultipleChoiceQuestion(req, res) {
   }
 }
 
-// controllers/multipleChoiceQuestionController.js
+// getMultipleChoiceQuestion
 
 async function getMultipleChoiceQuestion(req, res) {
     const questionId = req.params.id;
