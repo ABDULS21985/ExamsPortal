@@ -3,6 +3,9 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const userRoutes = require('./routes/users');
 const questionRoutes = require('./routes/questions');
+const trueFalseQuestionRoutes = require('./routes/trueFalseQuestionRoutes');
+const multipleChoiceQuestionRoutes = require('./routes/multipleChoiceQuestionRoutes');
+const essayQuestionRoutes = require('./routes/essayQuestionRoutes');
 const { connectToDatabase } = require('./db'); // Import the connectToDatabase function
 
 dotenv.config();
@@ -35,8 +38,14 @@ function validateRequest(req, res, next) {
 // Routes
 // Apply validation middleware to the question routes
 app.use('/api/questions', validateRequest, questionRoutes);
+// Use True/False question routes
+app.use('/api/true-false-questions', trueFalseQuestionRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/users', userRoutes); // Mount user routes
+// Use Multiple Choice question routes
+app.use('/api/multiple-choice-questions', multipleChoiceQuestionRoutes);
+// Use Essay question routes
+app.use('/api/essay-questions', essayQuestionRoutes);
 
 // Middleware for logging errors
 app.use((err, req, res, next) => {

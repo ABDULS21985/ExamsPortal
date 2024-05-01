@@ -13,10 +13,10 @@ const pool = new Pool({
 async function connectToDatabase() {
     try {
         const client = await pool.connect();
-        console.log('Successfully connected to the database');
+        console.log('Successfully connected to the Exams Portal database');
         client.release();
     } catch (error) {
-        console.error('Error connecting to database:', error);
+        console.error('Error connecting to the ExamsPortal database:', error);
     }
 }
 
