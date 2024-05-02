@@ -1,5 +1,5 @@
 // controllers/examController.js
-// defined controller functions for creating, retrieving, updating, and deleting exams. 
+// Here iam defining controller functions for creating, retrieving, updating, and deleting exams. 
 //These functions interact with the database to perform CRUD operations on exams.
 
 const { pool } = require('../db');
