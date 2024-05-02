@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
+const crypto = require('crypto');
+const transporter = require('../nodemailerConfig');
 
 // Register a new user
 async function register(req, res) {
@@ -94,4 +96,86 @@ async function getUserProfile(req, res) {
   }
 }
 
-module.exports = { register, login, getUserProfile };
+// Password reset request handler
+async function resetPasswordRequest(req, res) {
+  const { email } = req.body;
+
+  // Generate a unique reset token
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  try {
+    const client = await pool.connect();
+    // Store the reset token in the database along with the user's email and an expiration timestamp
+    const result = await client.query('INSERT INTO password_reset_tokens (email, token, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'1 hour\')', [email, resetToken]);
+    client.release();
+    
+    // Send reset instructions to the user's email
+    async function resetPasswordRequest(req, res) {
+      const { email } = req.body;
+      const resetToken = crypto.randomBytes(20).toString('hex');
+    
+      try {
+        const client = await pool.connect();
+        const result = await client.query('INSERT INTO password_reset_tokens (email, token, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'1 hour\')', [email, resetToken]);
+        client.release();
+    
+        const mailOptions = {
+          from: 'your_email@example.com',
+          to: email,
+          subject: 'Password Reset Instructions',
+          text: `Please click on the following link to reset your password: http://example.com/reset-password?token=${resetToken}`,
+        };
+    
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error('Error sending email:', error);
+            res.status(500).json({ error: 'An error occurred while sending password reset instructions' });
+          } else {
+            console.log('Email sent:', info.response);
+            res.status(200).json({ message: 'Password reset instructions sent successfully' });
+          }
+        });
+      } catch (error) {
+        console.error('Error sending password reset instructions:', error);
+        res.status(500).json({ error: 'An error occurred while sending password reset instructions' });
+      }
+    }
+    
+    
+    res.status(200).json({ message: 'Password reset instructions sent successfully' });
+  } catch (error) {
+    console.error('Error sending password reset instructions:', error);
+    res.status(500).json({ error: 'An error occurred while sending password reset instructions' });
+  }
+}
+
+// Password reset handler
+async function resetPassword(req, res) {
+  const { email, newPassword, resetToken } = req.body;
+
+  try {
+    const client = await pool.connect();
+    // Check if the reset token is valid and has not expired
+    const result = await client.query('SELECT * FROM password_reset_tokens WHERE email = $1 AND token = $2 AND expires_at > NOW()', [email, resetToken]);
+    const tokenValid = result.rows.length > 0;
+
+    if (!tokenValid) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    // Update the user's password in the database
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await client.query('UPDATE users SET password = $1 WHERE email = $2', [hashedPassword, email]);
+
+    // Delete the reset token from the database
+    await client.query('DELETE FROM password_reset_tokens WHERE email = $1 AND token = $2', [email, resetToken]);
+
+    client.release();
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ error: 'An error occurred while resetting password' });
+  }
+}
+
+module.exports = { register, login, resetPasswordRequest, resetPassword, getUserProfile, };
