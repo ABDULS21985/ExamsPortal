@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const errorHandler = require('./middleware/errorHandler'); 
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
@@ -26,6 +27,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Connect to the database
 connectToDatabase(); // Call the connectToDatabase function
 
+// Applying my error handling middleware
+app.use(errorHandler);
+
 // Custom Validation Middleware
 function validateRequest(req, res, next) {
   
@@ -38,15 +42,18 @@ function validateRequest(req, res, next) {
 }
 
 // Routes
-// Apply validation middleware to the question routes
+// Applying validation middleware to the question routes
 app.use('/api/questions', validateRequest, questionRoutes);
-// Use True/False question routes
+
+// Using True/False question routes
 app.use('/api/true-false-questions', trueFalseQuestionRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/users', userRoutes); // Mount user routes
-// Use Multiple Choice question routes
+
+// Using Multiple Choice question routes
 app.use('/api/multiple-choice-questions', multipleChoiceQuestionRoutes);
-// Use Essay question routes
+
+// Using Essay question routes
 app.use('/api/essay-questions', essayQuestionRoutes);
 
 // Middleware for logging errors
@@ -55,7 +62,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal Server Error' });
   });
 
-// Start server
+// Starting my Portal Backend server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

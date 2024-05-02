@@ -1,11 +1,18 @@
 // controllers/userController.js
 const bcrypt = require('bcrypt');
+const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
 
 // Register a new user
 async function register(req, res) {
   const { username, email, password } = req.body;
+
+    // Validate request body
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
   // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -38,12 +45,53 @@ async function register(req, res) {
 
 // Login user
 async function login(req, res) {
-  // Implementation remains the same
+  const { email, password } = req.body;
+
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
+    client.release();
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Compare passwords
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ message: 'Login successful', token });
+  } catch (error) {
+    console.error('Error logging in user:', error);
+    res.status(500).json({ error: 'An error occurred while logging in user' });
+  }
 }
 
 // Get user profile
 async function getUserProfile(req, res) {
-  // Implementation remains the same
+  const userId = req.user.userId; // Assuming you have userId stored in the request object
+
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT id, username, email FROM users WHERE id = $1', [userId]);
+    const user = result.rows[0];
+    client.release();
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ userProfile: user });
+  } catch (error) {
+    console.error('Error retrieving user profile:', error);
+    res.status(500).json({ error: 'An error occurred while retrieving user profile' });
+  }
 }
 
 module.exports = { register, login, getUserProfile };

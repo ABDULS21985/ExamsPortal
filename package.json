@@ -6,6 +6,7 @@
     "dotenv": "^16.4.5",
     "eslint": "^9.1.1",
     "express": "^4.19.2",
+    "express-validator": "^7.0.1",
     "git": "^0.1.5",
     "gulp": "^5.0.0",
     "intellisense": "^0.0.1",
