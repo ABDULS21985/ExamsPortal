@@ -122,7 +122,7 @@ async function resetPasswordRequest(req, res) {
         client.release();
     
         const mailOptions = {
-          from: 'your_email@example.com',
+          from: 'ExamsAdmin@Portal.com',
           to: email,
           subject: 'Password Reset Instructions',
           text: `Please click on the following link to reset your password: http://example.com/reset-password?token=${resetToken}`,
@@ -185,7 +185,7 @@ function sendResetInstructions(email, resetToken) {
   });
 
   const mailOptions = {
-    from: 'your_email@example.com',
+    from: 'eXamsAdmin@portal.com',
     to: email,
     subject: 'Password Reset Instructions',
     text: `Please click on the following link to reset your password: http://example.com/reset-password?token=${resetToken}`,

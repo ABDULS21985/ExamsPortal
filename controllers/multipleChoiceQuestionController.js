@@ -6,7 +6,7 @@ const { pool } = require('../db');
 async function createMultipleChoiceQuestion(req, res) {
   const { content, options, correctAnswers } = req.body;
 
-  // Basic validation
+  // here iam applying Basic validation
   if (!content || !Array.isArray(options) || !Array.isArray(correctAnswers)) {
     return res.status(400).json({ error: 'Invalid data format' });
   }
@@ -19,11 +19,11 @@ async function createMultipleChoiceQuestion(req, res) {
 
     await client.query('BEGIN');
 
-    // Insert the question into the questions table
+    // Inserting the question into the questions table
     const questionInsertResult = await client.query('INSERT INTO questions (content, type) VALUES ($1, $2) RETURNING id', [content, 'multiple_choice']);
     const questionId = questionInsertResult.rows[0].id;
 
-    // Insert options and correct answers into the multiple_choice_questions table
+    // Inserting options and correct answers into the multiple_choice_questions table
     await client.query('INSERT INTO multiple_choice_questions (question_id, options, correct_answers) VALUES ($1, $2, $3)', [questionId, JSON.stringify(options), correctAnswers]);
 
 

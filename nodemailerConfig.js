@@ -12,4 +12,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+console.log('Nodemailer transporter created with configuration:', transporter.options);
+
 module.exports = transporter;
