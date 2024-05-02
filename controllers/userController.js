@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
 const crypto = require('crypto');
 const transporter = require('../nodemailerConfig');
+const nodemailer = require('nodemailer');
+
 
 // Register a new user
 async function register(req, res) {
@@ -149,6 +151,55 @@ async function resetPasswordRequest(req, res) {
   }
 }
 
+// Password reset request handler
+async function resetPasswordRequest(req, res) {
+  const { email } = req.body;
+
+  // Generate a unique reset token
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  try {
+    const client = await pool.connect();
+    // Get the user ID associated with the provided email
+    const userResult = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+    const userId = userResult.rows[0].id;
+    // Store the reset token in the database along with the user's email and an expiration timestamp
+    const result = await client.query('INSERT INTO password_reset_tokens (user_id, email, token, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL \'1 hour\')', [userId, email, resetToken]);
+    client.release();
+
+    // Send reset instructions to the user's email
+    sendResetInstructions(email, resetToken);
+
+    res.status(200).json({ message: 'Password reset instructions sent successfully' });
+  } catch (error) {
+    console.error('Error sending password reset instructions:', error);
+    res.status(500).json({ error: 'An error occurred while sending password reset instructions' });
+  }
+}
+
+
+// Send reset instructions to the user's email
+function sendResetInstructions(email, resetToken) {
+  const transporter = nodemailer.createTransport({
+    // Configure nodemailer transporter
+  });
+
+  const mailOptions = {
+    from: 'your_email@example.com',
+    to: email,
+    subject: 'Password Reset Instructions',
+    text: `Please click on the following link to reset your password: http://example.com/reset-password?token=${resetToken}`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+    } else {
+      console.log('Email sent:', info.response);
+    }
+  });
+}
+
 // Password reset handler
 async function resetPassword(req, res) {
   const { email, newPassword, resetToken } = req.body;
@@ -177,5 +228,4 @@ async function resetPassword(req, res) {
     res.status(500).json({ error: 'An error occurred while resetting password' });
   }
 }
-
 module.exports = { register, login, resetPasswordRequest, resetPassword, getUserProfile, };
