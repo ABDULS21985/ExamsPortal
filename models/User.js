@@ -15,7 +15,17 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
-  }
+  },
+  role: {
+    type: DataTypes.STRING,
+    allowNull: false
+},
+id: {
+  type: DataTypes.UUID,
+  defaultValue: DataTypes.UUIDV4,
+  primaryKey: true
+},
+
 });
 
 module.exports = User;

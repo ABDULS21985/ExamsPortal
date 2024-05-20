@@ -10,6 +10,7 @@ const questionRoutes = require('./routes/questions');
 const trueFalseQuestionRoutes = require('./routes/trueFalseQuestionRoutes');
 const multipleChoiceQuestionRoutes = require('./routes/multipleChoiceQuestionRoutes');
 const essayQuestionRoutes = require('./routes/essayQuestionRoutes');
+const resultRoutes = require('./routes/resultRoutes');
 const { connectToDatabase } = require('./db'); 
 const extractUserId = require('./middleware/extractUserId');
 
@@ -69,6 +70,7 @@ app.use('/api/multiple-choice-questions', multipleChoiceQuestionRoutes);
 // Using Essay question routes
 app.use('/api/essay-questions', essayQuestionRoutes);
 
+app.use('/api/results', resultRoutes);
 
 // Middleware for logging errors
 app.use((err, req, res, next) => {
