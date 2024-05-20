@@ -1,9 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const errorHandler = require('./middleware/errorHandler'); 
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 const secretKey = process.env.JWT_SECRET;
+const errorHandler = require('./middleware/errorHandler'); 
 const userRoutes = require('./routes/users');
 const questionRoutes = require('./routes/questions');
 const trueFalseQuestionRoutes = require('./routes/trueFalseQuestionRoutes');
@@ -18,12 +19,21 @@ const app = express();
 
 
 // Middleware for logging requests
+
+const corsOptions = {
+  origin: 'https://localhost:3000', // Replace with my frontend domain
+  optionsSuccessStatus: 200, // Some legacy browsers choke on 204 for preflight requests
+  methods: 'GET, POST, PUT, DELETE', // Allowed request methods
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'] // Allowed headers
+};
+
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
   });
 
 // Other Middleware
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
