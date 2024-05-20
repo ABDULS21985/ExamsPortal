@@ -12,6 +12,7 @@
     "git": "^0.1.5",
     "gulp": "^5.0.0",
     "intellisense": "^0.0.1",
+    "joi": "^17.13.1",
     "jsonwebtoken": "^9.0.2",
     "node": "^22.0.0",
     "node.js": "^0.0.1-security",

@@ -1,4 +1,12 @@
 const { pool } = require('../db');
+const Joi = require('joi');
+
+// Joi schema for validating a single question
+const questionSchema = Joi.object({
+  content: Joi.string().required(),
+  options: Joi.array().items(Joi.string()).required(),
+  correctAnswers: Joi.array().items(Joi.string()).required(),
+});
 
 // Create Multiple-Choice Question
 async function createMultipleChoiceQuestion(req, res) {
@@ -8,7 +16,11 @@ async function createMultipleChoiceQuestion(req, res) {
   if (!content || !Array.isArray(options) || !Array.isArray(correctAnswers)) {
     return res.status(400).json({ error: 'Invalid data format' });
   }
-
+  // Basic validation
+  const { error } = questionSchema.validate({ content, options, correctAnswers });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
   console.log('Received options:', options);
   console.log('Received correct answers:', correctAnswers);
 
@@ -32,6 +44,66 @@ async function createMultipleChoiceQuestion(req, res) {
     res.status(500).json({ error: 'An error occurred while creating multiple-choice question' });
   }
 }
+
+// Create Multiple-Choice Questions in Bulk
+async function createMultipleChoiceQuestionsBulk(req, res) {
+  const questions = req.body;
+
+  // Validate the request body
+  if (!Array.isArray(questions)) {
+    return res.status(400).json({ error: 'Invalid data format: expected an array of questions' });
+  }
+
+  // Validate each question in the array
+  for (const question of questions) {
+    const { error } = questionSchema.validate(question);
+    if (error) {
+      return res.status(400).json({ error: `Invalid data format in one of the questions: ${error.details[0].message}` });
+    }
+  }
+
+  try {
+    const client = await pool.connect();
+    await client.query('BEGIN');
+
+    const questionIds = [];
+
+    for (const question of questions) {
+      const { content, options, correctAnswers } = question;
+
+      // Insert question into questions table
+      const questionInsertResult = await client.query(
+        'INSERT INTO questions (content, type) VALUES ($1, $2) RETURNING id',
+        [content, 'multiple_choice']
+      );
+      const questionId = questionInsertResult.rows[0].id;
+
+      // Ensure options and correctAnswers are formatted as JSON strings
+      const optionsJson = JSON.stringify(options);
+      const correctAnswersJson = JSON.stringify(correctAnswers);
+
+      // Insert options and correct answers into multiple_choice_questions table
+      await client.query(
+        'INSERT INTO multiple_choice_questions (question_id, options, correct_answers) VALUES ($1, $2, $3)',
+        [questionId, optionsJson, correctAnswersJson]
+      );
+
+      questionIds.push(questionId);
+    }
+
+    await client.query('COMMIT');
+    client.release();
+
+    res.status(201).json({ message: 'Multiple-choice questions created successfully', questionIds });
+  } catch (error) {
+    console.error('Error creating multiple-choice questions:', error);
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: 'An error occurred while creating multiple-choice questions' });
+  }
+}
+
+
+
 
 // Get Multiple-Choice Question
 async function getMultipleChoiceQuestion(req, res) {
@@ -113,4 +185,4 @@ async function deleteMultipleChoiceQuestion(req, res) {
   }
 }
 
-module.exports = { createMultipleChoiceQuestion, getMultipleChoiceQuestion, updateMultipleChoiceQuestion, deleteMultipleChoiceQuestion };
+module.exports = { createMultipleChoiceQuestion, createMultipleChoiceQuestionsBulk, getMultipleChoiceQuestion, updateMultipleChoiceQuestion, deleteMultipleChoiceQuestion };
